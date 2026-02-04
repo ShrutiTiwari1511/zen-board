@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>A Small Game With Big Feelings</title>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kurenaido&family=Noto+Serif+JP:wght@300;400&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #f6f1eb;
+  --card: #ffffffcc;
+  --accent: #d7a9b3;
+  --accent-dark: #b5838d;
+  --text: #3a3a3a;
+  --locked: #cfcfcf;
+  --success: #8fb9a8;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: 'Zen Kurenaido', sans-serif;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f6f1eb, #fcefee);
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hidden { display: none; }
+
+.container {
+  width: 100%;
+  max-width: 900px;
+  padding: 24px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  backdrop-filter: blur(8px);
+}
+
+h1, h2 {
+  font-family: 'Noto Serif JP', serif;
+  text-align: center;
+}
+
+button {
+  background: var(--accent);
+  border: none;
+  padding: 10px 18px;
+  border-radius: 20px;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  background: var(--accent-dark);
+}
+
+input {
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.level-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.level {
+  padding: 16px;
+  border-radius: 16px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.level.locked {
+  background: #eee;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.level.unlocked {
+  background: linear-gradient(135deg, #fde2e4, #fff1f1);
+}
+
+.gift {
+  background: linear-gradient(135deg, #e8f6ef, #f1fffa);
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 12px;
+}
+
+.word-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.word {
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid #eee;
+}
+
+.word.correct {
+  background: var(--success);
+  color: white;
+}
+
+.word.wrong {
+  background: #f2c6c6;
+  color: white;
+}
+
+.footer-note {
+  text-align: center;
+  font-size: 0.85em;
+  opacity: 0.7;
+  margin-top: 16px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- PASSWORD SCREEN -->
+<div id="lockScreen" class="card">
+  <h1>🌸 A Small World Awaits 🌸</h1>
+  <p>To unlock this game, enter the password.</p>
+  <input id="passwordInput" placeholder="Enter password"/>
+  <button onclick="checkPassword()">Unlock</button>
+  <p style="margin-top:10px;font-size:0.9em;">Hint: <i>What's your nickname?</i></p>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="card hidden">
+  <h1>🎮 The Game Board</h1>
+  <p style="text-align:center;">Each level unlocks a gift. Some things are worth waiting for.</p>
+
+  <div class="level-grid">
+    <div class="level unlocked" onclick="startLevel(1)">Level 1<br/>🗂 Codenames</div>
+    <div class="level" id="level2">Level 2<br/>🔒 Locked</div>
+    <div class="level" id="level3">Level 3<br/>🔒 Locked</div>
+    <div class="level" id="level4">Level 4<br/>🔒 Locked</div>
+  </div>
+
+  <h2 style="margin-top:32px;">🎁 Gift Collection</h2>
+  <div id="giftCollection"></div>
+</div>
+
+<!-- LEVEL 1 -->
+<div id="level1" class="card hidden">
+  <h2>Level 1 — Codenames (Solo)</h2>
+  <p>Find all <b>5 secret words</b>. Choose carefully.</p>
+
+  <div class="word-grid" id="wordGrid"></div>
+
+  <button style="margin-top:16px;" onclick="resetLevel1()">Retry</button>
+</div>
+
+<!-- GIFT SCREEN -->
+<div id="giftScreen" class="card hidden">
+  <h2>🎁 Gift Unlocked</h2>
+  <div class="gift">
+    <p>This is where your gift goes.</p>
+    <a href="https://www.canva.com/" target="_blank">Open Gift 💌</a>
+  </div>
+  <button style="margin-top:16px;" onclick="backToDashboard()">Back</button>
+</div>
+
+</div>
+
+<script>
+const PASSWORD = "dudez";
+const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+
+const unlockDates = {
+  2: new Date("2026-02-10T00:00:00+05:30"),
+  3: new Date("2026-02-17T00:00:00+05:30"),
+  4: new Date("2026-02-24T00:00:00+05:30"),
+};
+
+const words = [
+  "Moon","Tea","Silence","Paper","River",
+  "Fire","Time","Letter","Window","Dream",
+  "Rain","Memory","Lantern","Music","Path"
+];
+
+const correctWords = ["Moon","Tea","Dream","Lantern","Letter"];
+let found = [];
+
+function checkPassword() {
+  if (passwordInput.value === PASSWORD) {
+    lockScreen.classList.add("hidden");
+    dashboard.classList.remove("hidden");
+    checkUnlocks();
+    loadGifts();
+  } else {
+    alert("Not quite 🌙");
+  }
+}
+
+function checkUnlocks() {
+  const now = new Date();
+  [2,3,4].forEach(lvl => {
+    if (now >= unlockDates[lvl]) {
+      const el = document.getElementById(`level${lvl}`);
+      el.classList.remove("locked");
+      el.classList.add("unlocked");
+      el.innerHTML = `Level ${lvl}<br/>✨ Unlocked`;
+    }
+  });
+}
+
+function startLevel(lvl) {
+  dashboard.classList.add("hidden");
+  if (lvl === 1) {
+    level1.classList.remove("hidden");
+    renderWords();
+  }
+}
+
+function renderWords() {
+  found = [];
+  wordGrid.innerHTML = "";
+  words.forEach(w => {
+    const div = document.createElement("div");
+    div.className = "word";
+    div.innerText = w;
+    div.onclick = () => selectWord(div, w);
+    wordGrid.appendChild(div);
+  });
+}
+
+function selectWord(div, word) {
+  if (correctWords.includes(word)) {
+    div.classList.add("correct");
+    found.push(word);
+  } else {
+    div.classList.add("wrong");
+  }
+  div.onclick = null;
+
+  if (found.length === correctWords.length) {
+    unlockGift(1);
+  }
+}
+
+function unlockGift(level) {
+  level1.classList.add("hidden");
+  giftScreen.classList.remove("hidden");
+  localStorage.setItem(`gift${level}`, "unlocked");
+}
+
+function loadGifts() {
+  giftCollection.innerHTML = "";
+  [1,2,3,4].forEach(lvl => {
+    if (localStorage.getItem(`gift${lvl}`)) {
+      const div = document.createElement("div");
+      div.className = "gift";
+      div.innerText = `Gift from Level ${lvl}`;
+      giftCollection.appendChild(div);
+    }
+  });
+}
+
+function resetLevel1() {
+  renderWords();
+}
+
+function backToDashboard() {
+  giftScreen.classList.add("hidden");
+  dashboard.classList.remove("hidden");
+  loadGifts();
+}
+</script>
+
+</body>
+</html>

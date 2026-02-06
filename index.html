@@ -6,29 +6,28 @@
 <title>A Small Game With Big Feelings</title>
 
 <!-- Google Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Zen+Kurenaido&family=Noto+Serif+JP:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
 :root {
-  --bg: #f6f1eb;
-  --card: #ffffffcc;
-  --accent: #d7a9b3;
-  --accent-dark: #b5838d;
-  --text: #3a3a3a;
-  --locked: #cfcfcf;
-  --success: #8fb9a8;
+  --navy: #0a2540;
+  --pista: #9ad0a4;
+  --white: #ffffff;
+  --card: #ffffffee;
+  --locked: #cccccc;
+  --success: #3cb371;
 }
 
 * {
   box-sizing: border-box;
-  font-family: 'Zen Kurenaido', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background: linear-gradient(180deg, #f6f1eb, #fcefee);
-  color: var(--text);
+  background: linear-gradient(180deg, #0a2540, #102f4a);
+  color: var(--white);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -38,105 +37,81 @@ body {
 
 .container {
   width: 100%;
-  max-width: 900px;
-  padding: 24px;
+  max-width: 420px;
+  padding: 16px;
 }
 
 .card {
   background: var(--card);
+  color: #0a2540;
   border-radius: 18px;
-  padding: 24px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-  backdrop-filter: blur(8px);
+  padding: 20px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.25);
 }
 
 h1, h2 {
-  font-family: 'Noto Serif JP', serif;
   text-align: center;
 }
 
 button {
-  background: var(--accent);
+  background: var(--navy);
+  color: var(--white);
   border: none;
-  padding: 10px 18px;
-  border-radius: 20px;
-  color: white;
+  padding: 12px 20px;
+  border-radius: 24px;
+  font-weight: 600;
   cursor: pointer;
-  transition: 0.2s;
+  width: 100%;
 }
 
 button:hover {
-  background: var(--accent-dark);
+  background: #061a2f;
 }
 
 input {
-  padding: 10px;
+  padding: 12px;
   border-radius: 12px;
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
   width: 100%;
   margin-bottom: 12px;
 }
 
 .level-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
 .level {
-  padding: 16px;
-  border-radius: 16px;
+  padding: 14px;
+  border-radius: 14px;
   text-align: center;
-  cursor: pointer;
 }
 
 .level.locked {
   background: #eee;
   color: #999;
-  cursor: not-allowed;
 }
 
 .level.unlocked {
-  background: linear-gradient(135deg, #fde2e4, #fff1f1);
+  background: linear-gradient(135deg, #e8f7ec, #ffffff);
+  cursor: pointer;
 }
 
-.gift {
-  background: linear-gradient(135deg, #e8f6ef, #f1fffa);
-  border-radius: 16px;
-  padding: 16px;
+canvas {
+  width: 100%;
+  background: #0a2540;
+  border-radius: 14px;
+  display: block;
   margin-top: 12px;
 }
 
-.word-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-}
-
-.word {
-  background: #fff;
-  border-radius: 10px;
-  padding: 10px;
+.gift {
+  background: linear-gradient(135deg, #e8f7ec, #ffffff);
+  border-radius: 14px;
+  padding: 14px;
+  margin-top: 12px;
   text-align: center;
-  cursor: pointer;
-  border: 1px solid #eee;
-}
-
-.word.correct {
-  background: var(--success);
-  color: white;
-}
-
-.word.wrong {
-  background: #f2c6c6;
-  color: white;
-}
-
-.footer-note {
-  text-align: center;
-  font-size: 0.85em;
-  opacity: 0.7;
-  margin-top: 16px;
 }
 </style>
 </head>
@@ -147,37 +122,36 @@ input {
 
 <!-- PASSWORD SCREEN -->
 <div id="lockScreen" class="card">
-  <h1>🌸 A Small World Awaits 🌸</h1>
-  <p>To unlock this game, enter the password.</p>
+  <h1>🔐 Unlock the Game</h1>
+  <p style="text-align:center;">Enter the password to begin</p>
   <input id="passwordInput" placeholder="Enter password"/>
   <button onclick="checkPassword()">Unlock</button>
-  <p style="margin-top:10px;font-size:0.9em;">Hint: <i>What's your nickname?</i></p>
+  <p style="margin-top:10px;font-size:0.9em;text-align:center;">
+    Hint: <i>What's your nickname?</i>
+  </p>
 </div>
 
 <!-- DASHBOARD -->
 <div id="dashboard" class="card hidden">
-  <h1>🎮 The Game Board</h1>
-  <p style="text-align:center;">Each level unlocks a gift. Some things are worth waiting for.</p>
+  <h1>🎮 Game Board</h1>
 
   <div class="level-grid">
-    <div class="level unlocked" onclick="startLevel(1)">Level 1<br/>🗂 Codenames</div>
-    <div class="level" id="level2">Level 2<br/>🔒 Locked</div>
-    <div class="level" id="level3">Level 3<br/>🔒 Locked</div>
-    <div class="level" id="level4">Level 4<br/>🔒 Locked</div>
+    <div class="level unlocked" onclick="startLevel(1)">Level 1<br/>🏓 Paddle Challenge</div>
+    <div class="level locked" id="level2">Level 2<br/>🔒</div>
+    <div class="level locked" id="level3">Level 3<br/>🔒</div>
+    <div class="level locked" id="level4">Level 4<br/>🔒</div>
   </div>
 
-  <h2 style="margin-top:32px;">🎁 Gift Collection</h2>
+  <h2 style="margin-top:24px;">🎁 Gifts</h2>
   <div id="giftCollection"></div>
 </div>
 
 <!-- LEVEL 1 -->
 <div id="level1" class="card hidden">
-  <h2>Level 1 — Codenames (Solo)</h2>
-  <p>Find all <b>5 secret words</b>. Choose carefully.</p>
-
-  <div class="word-grid" id="wordGrid"></div>
-
-  <button style="margin-top:16px;" onclick="resetLevel1()">Retry</button>
+  <h2>Paddle Challenge</h2>
+  <p style="text-align:center;">Keep the ball alive for <b>15 hits</b></p>
+  <canvas id="gameCanvas" height="260"></canvas>
+  <button style="margin-top:14px;" onclick="backToDashboard()">Exit</button>
 </div>
 
 <!-- GIFT SCREEN -->
@@ -185,87 +159,91 @@ input {
   <h2>🎁 Gift Unlocked</h2>
   <div class="gift">
     <p>This is where your gift goes.</p>
-    <a href="https://www.canva.com/" target="_blank">Open Gift 💌</a>
+    <a href="https://www.canva.com/" target="_blank">Open Gift 🎉</a>
   </div>
-  <button style="margin-top:16px;" onclick="backToDashboard()">Back</button>
+  <button style="margin-top:14px;" onclick="backToDashboard()">Back</button>
 </div>
 
 </div>
 
 <script>
 const PASSWORD = "dudez";
-const IST_OFFSET = 5.5 * 60 * 60 * 1000;
-
-const unlockDates = {
-  2: new Date("2026-02-10T00:00:00+05:30"),
-  3: new Date("2026-02-17T00:00:00+05:30"),
-  4: new Date("2026-02-24T00:00:00+05:30"),
-};
-
-const words = [
-  "Moon","Tea","Silence","Paper","River",
-  "Fire","Time","Letter","Window","Dream",
-  "Rain","Memory","Lantern","Music","Path"
-];
-
-const correctWords = ["Moon","Tea","Dream","Lantern","Letter"];
-let found = [];
 
 function checkPassword() {
-  if (passwordInput.value === PASSWORD) {
+  if (passwordInput.value.trim().toLowerCase() === PASSWORD.toLowerCase()) {
     lockScreen.classList.add("hidden");
     dashboard.classList.remove("hidden");
-    checkUnlocks();
     loadGifts();
   } else {
-    alert("Not quite 🌙");
+    alert("Not quite 😌");
   }
 }
 
-function checkUnlocks() {
-  const now = new Date();
-  [2,3,4].forEach(lvl => {
-    if (now >= unlockDates[lvl]) {
-      const el = document.getElementById(`level${lvl}`);
-      el.classList.remove("locked");
-      el.classList.add("unlocked");
-      el.innerHTML = `Level ${lvl}<br/>✨ Unlocked`;
-    }
-  });
-}
+/* -------- Paddle Game -------- */
 
-function startLevel(lvl) {
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let paddle = { x: 120, w: 80 };
+let ball = { x: 150, y: 130, dx: 2, dy: -2, r: 6 };
+let hits = 0;
+let running = false;
+
+function startLevel() {
   dashboard.classList.add("hidden");
-  if (lvl === 1) {
-    level1.classList.remove("hidden");
-    renderWords();
-  }
+  level1.classList.remove("hidden");
+  hits = 0;
+  running = true;
+  loop();
 }
 
-function renderWords() {
-  found = [];
-  wordGrid.innerHTML = "";
-  words.forEach(w => {
-    const div = document.createElement("div");
-    div.className = "word";
-    div.innerText = w;
-    div.onclick = () => selectWord(div, w);
-    wordGrid.appendChild(div);
-  });
-}
+canvas.addEventListener("touchmove", e => {
+  const rect = canvas.getBoundingClientRect();
+  paddle.x = e.touches[0].clientX - rect.left - paddle.w / 2;
+});
 
-function selectWord(div, word) {
-  if (correctWords.includes(word)) {
-    div.classList.add("correct");
-    found.push(word);
-  } else {
-    div.classList.add("wrong");
-  }
-  div.onclick = null;
+function loop() {
+  if (!running) return;
 
-  if (found.length === correctWords.length) {
-    unlockGift(1);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // Paddle
+  ctx.fillStyle = "#9ad0a4";
+  ctx.fillRect(paddle.x, canvas.height - 20, paddle.w, 10);
+
+  // Ball
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.closePath();
+
+  ball.x += ball.dx;
+  ball.y += ball.dy;
+
+  if (ball.x < 0 || ball.x > canvas.width) ball.dx *= -1;
+  if (ball.y < 0) ball.dy *= -1;
+
+  if (
+    ball.y > canvas.height - 30 &&
+    ball.x > paddle.x &&
+    ball.x < paddle.x + paddle.w
+  ) {
+    ball.dy *= -1;
+    hits++;
+    if (hits >= 15) {
+      running = false;
+      unlockGift(1);
+      return;
+    }
   }
+
+  if (ball.y > canvas.height) {
+    running = false;
+    alert("Try again 💪");
+  }
+
+  requestAnimationFrame(loop);
 }
 
 function unlockGift(level) {
@@ -286,11 +264,8 @@ function loadGifts() {
   });
 }
 
-function resetLevel1() {
-  renderWords();
-}
-
 function backToDashboard() {
+  level1.classList.add("hidden");
   giftScreen.classList.add("hidden");
   dashboard.classList.remove("hidden");
   loadGifts();

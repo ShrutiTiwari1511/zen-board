@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>A Small Game With Big Feelings</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --navy: #0a2540;
+  --pista: #9ad0a4;
+  --white: #ffffff;
+  --card: rgba(255,255,255,0.95);
+}
+
+* {
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #081e33, #0a2540);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--navy);
+}
+
+.hidden { display: none; }
+
+.container {
+  width: 100%;
+  max-width: 420px;
+  padding: 16px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+}
+
+h1, h2 {
+  text-align: center;
+  margin-top: 0;
+}
+
+p {
+  text-align: center;
+  opacity: 0.75;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 24px;
+  border: none;
+  background: var(--navy);
+  color: var(--white);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid #ccc;
+  margin-bottom: 12px;
+}
+
+.level-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.level {
+  padding: 16px;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.level.unlocked {
+  background: linear-gradient(135deg, #e6f5ea, #ffffff);
+  cursor: pointer;
+}
+
+.level.locked {
+  background: #eee;
+  color: #aaa;
+  cursor: pointer;
+}
+
+.game-wrap {
+  margin-top: 14px;
+  background: linear-gradient(180deg, #0a2540, #081e33);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+canvas {
+  width: 100%;
+  background: radial-gradient(circle at top, #0f355a, #081e33);
+  border-radius: 14px;
+}
+
+.game-ui {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  color: white;
+  font-size: 0.9rem;
+}
+
+.reset-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.4);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 18px;
+}
+
+.gift {
+  background: linear-gradient(135deg, #e6f5ea, #ffffff);
+  padding: 16px;
+  border-radius: 16px;
+  margin-top: 12px;
+  text-align: center;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<!-- LOCK SCREEN -->
+<div id="lockScreen" class="card">
+  <h1>🔐 Unlock the Game</h1>
+  <p>Enter the password to begin</p>
+  <input id="passwordInput" placeholder="Enter password"/>
+  <button onclick="checkPassword()">Unlock</button>
+  <p style="font-size:0.9em;margin-top:10px;">
+    Hint: <i>Platform that unlocked our meet</i>
+  </p>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="card hidden">
+  <h1>🎮 Game Board</h1>
+
+  <div class="level-grid">
+    <div class="level unlocked" onclick="startLevel1()">Level 1<br/>🏓 Paddle Precision</div>
+    <div class="level locked" onclick="alert('Locked 🔒')">Level 2<br/>🔒</div>
+    <div class="level locked" onclick="alert('Locked 🔒')">Level 3<br/>🔒</div>
+  </div>
+
+  <h2 style="margin-top:24px;">🎁 Gifts</h2>
+  <div id="giftCollection"></div>
+</div>
+
+<!-- LEVEL 1 -->
+<div id="level1" class="card hidden">
+  <h2>Paddle Precision</h2>
+  <p>5 clean hits. No misses.</p>
+
+  <div class="game-wrap">
+    <canvas id="gameCanvas" height="260"></canvas>
+    <div class="game-ui">
+      <span id="targetText">Hits: 0 / 5</span>
+      <button class="reset-btn" onclick="resetGame()">Reset</button>
+    </div>
+  </div>
+
+  <button style="margin-top:14px;" onclick="backToDashboard()">Exit</button>
+</div>
+
+<!-- GIFT SCREEN -->
+<div id="giftScreen" class="card hidden">
+  <h2>🎁 Gift Unlocked</h2>
+  <div class="gift">
+    <a href="https://drive.google.com/drive/folders/1ttnv62h9lp2xM5CdagobrllsHPoAshjK" target="_blank">Open Gift 🎉</a>
+  </div>
+  <button style="margin-top:14px;" onclick="backToDashboard()">Back</button>
+</div>
+
+</div>
+
+<script>
+/* -------- PASSWORD -------- */
+const PASSWORD = "hinge";
+
+function checkPassword() {
+  if (passwordInput.value.trim().toLowerCase() === PASSWORD) {
+    lockScreen.classList.add("hidden");
+    dashboard.classList.remove("hidden");
+    loadGifts();
+  } else {
+    alert("Not quite 😌");
+  }
+}
+
+/* -------- GAME -------- */
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+const paddleImg = new Image();
+paddleImg.src = "paddle.png";
+
+const ballImg = new Image();
+ballImg.src = "pickleball.png";
+
+let paddle, ball, targets, hits, running;
+
+function initGame() {
+  paddle = { x: 150, y: canvas.height - 60, w: 60, h: 60 };
+  ball = { x: 160, y: 180, dx: 2, dy: -2, r: 8 };
+  hits = 0;
+
+  targets = Array.from({ length: 5 }, () => ({
+    x: Math.random() * (canvas.width - 40) + 20,
+    y: Math.random() * 80 + 30,
+    hit: false
+  }));
+
+  running = true;
+  updateText();
+  loop();
+}
+
+canvas.addEventListener("mousemove", e => {
+  const rect = canvas.getBoundingClientRect();
+  paddle.x = e.clientX - rect.left - paddle.w / 2;
+});
+
+canvas.addEventListener("touchmove", e => {
+  const rect = canvas.getBoundingClientRect();
+  paddle.x = e.touches[0].clientX - rect.left - paddle.w / 2;
+});
+
+function loop() {
+  if (!running) return;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  ctx.drawImage(paddleImg, paddle.x, paddle.y, paddle.w, paddle.h);
+
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+  ctx.fillStyle = "#fff";
+  ctx.fill();
+
+  targets.forEach(t => {
+    if (!t.hit) ctx.drawImage(ballImg, t.x - 14, t.y - 14, 28, 28);
+  });
+
+  ball.x += ball.dx;
+  ball.y += ball.dy;
+
+  if (ball.x < 0 || ball.x > canvas.width) ball.dx *= -1;
+  if (ball.y < 0) ball.dy *= -1;
+
+  if (
+    ball.y + ball.r >= paddle.y &&
+    ball.x > paddle.x &&
+    ball.x < paddle.x + paddle.w
+  ) {
+    ball.dy *= -1;
+  }
+
+  targets.forEach(t => {
+    if (!t.hit) {
+      const dx = ball.x - t.x;
+      const dy = ball.y - t.y;
+      if (Math.sqrt(dx*dx + dy*dy) < 20) {
+        t.hit = true;
+        hits++;
+        ball.dy *= -1;
+        updateText();
+      }
+    }
+  });
+
+  if (hits === 5) {
+    running = false;
+    unlockGift(1);
+    return;
+  }
+
+  if (ball.y > canvas.height) running = false;
+  requestAnimationFrame(loop);
+}
+
+function updateText() {
+  targetText.innerText = `Hits: ${hits} / 5`;
+}
+
+function resetGame() {
+  initGame();
+}
+
+function startLevel1() {
+  dashboard.classList.add("hidden");
+  level1.classList.remove("hidden");
+  initGame();
+}
+
+/* -------- GIFTS -------- */
+function unlockGift(level) {
+  localStorage.setItem(`gift${level}`, "unlocked");
+  level1.classList.add("hidden");
+  giftScreen.classList.remove("hidden");
+}
+
+function loadGifts() {
+  giftCollection.innerHTML = "";
+  if (localStorage.getItem("gift1")) {
+    const div = document.createElement("div");
+    div.className = "gift";
+    div.innerHTML = `<a href="https://drive.google.com/" target="_blank">🎁 Gift from Level 1</a>`;
+    giftCollection.appendChild(div);
+  }
+}
+
+function backToDashboard() {
+  giftScreen.classList.add("hidden");
+  level1.classList.add("hidden");
+  dashboard.classList.remove("hidden");
+  loadGifts();
+}
+</script>
+</body>
+</html>

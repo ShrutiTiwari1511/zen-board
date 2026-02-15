@@ -6,6 +6,7 @@
 <title>A Small Game With Big Feelings</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 <style>
 :root {
@@ -19,6 +20,8 @@
   box-sizing: border-box;
   font-family: 'Inter', sans-serif;
 }
+
+html,body { height: 100%; }
 
 body {
   margin: 0;
@@ -34,15 +37,20 @@ body {
 
 .container {
   width: 100%;
-  max-width: 420px;
+  max-width: 720px;
   padding: 16px;
+  position: relative;
+  z-index: 2; /* keep container above hearts */
 }
 
+/* ensure cards are above the hearts layer */
 .card {
   background: var(--card);
   border-radius: 20px;
   padding: 22px;
   box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+  position: relative;
+  z-index: 3;
 }
 
 h1, h2 {
@@ -76,7 +84,7 @@ input {
 
 .level-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin-top: 16px;
 }
@@ -85,19 +93,50 @@ input {
   padding: 16px;
   border-radius: 16px;
   text-align: center;
+  min-height: 100px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
 }
 
 .level.unlocked {
   background: linear-gradient(135deg, #e6f5ea, #ffffff);
   cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
 }
 
 .level.locked {
   background: #eee;
   color: #aaa;
-  cursor: pointer;
+  cursor: default;
 }
 
+/* Full-screen hearts layer for Level 2 — many repeated lines to fill screen */
+.level2-bg::before {
+  content:
+"💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙\A\💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙\A\💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙\A\💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙\A\💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙\A\💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙\A\💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙\A\💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙 💚 💙";
+  white-space: pre-wrap;
+  position: fixed;
+  font-size: 40px;
+  line-height: 1.6;
+  opacity: 0.06;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1; /* behind container (container/card z-index is higher) */
+  display: block;
+  text-align: center;
+}
+
+/* keep the hearts layer visually behind level2 card but above base gradient */
+.level2-bg {
+  /* no explicit styles here — class only activates ::before */
+}
+
+/* rest unchanged */
 .game-wrap {
   margin-top: 14px;
   background: linear-gradient(180deg, #0a2540, #081e33);
@@ -128,12 +167,55 @@ canvas {
   border-radius: 18px;
 }
 
-.gift {
-  background: linear-gradient(135deg, #e6f5ea, #ffffff);
-  padding: 16px;
-  border-radius: 16px;
-  margin-top: 12px;
-  text-align: center;
+.crossword-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 34px);
+  gap: 6px;
+}
+
+.crossword-cell {
+  width: 34px;
+  height: 34px;
+  background: #f1f8f3;
+  border-radius: 6px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:600;
+  cursor:pointer;
+  user-select:none;
+  color: var(--navy);
+}
+
+.crossword-cell.selected {
+  background: var(--pista);
+  color:white;
+}
+
+.word-list {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:8px;
+}
+
+.word-pill {
+  padding:8px 10px;
+  border-radius:12px;
+  background:#f2f6f3;
+  border:1px solid #dfeee0;
+}
+
+.word-pill.found {
+  background: linear-gradient(135deg,#9ad0a4,#dff6e7);
+  text-decoration: line-through;
+}
+
+/* small screens adjustment */
+@media (max-width:600px){
+  .container { max-width:420px; }
+  .level-grid { grid-template-columns: repeat(2,1fr); }
+  .level2-bg::before { font-size: 28px; line-height: 1.4; }
 }
 </style>
 </head>
@@ -157,13 +239,36 @@ canvas {
   <h1>🎮 Game Board</h1>
 
   <div class="level-grid">
-    <div class="level unlocked" onclick="startLevel1()">Level 1<br/>🏓 Paddle Precision</div>
-    <div class="level locked" onclick="alert('Locked 🔒')">Level 2<br/>🔒</div>
-    <div class="level locked" onclick="alert('Locked 🔒')">Level 3<br/>🔒</div>
+    <div id="lvl1Card" class="level unlocked" onclick="startLevel1()">
+      <div>Level 1</div>
+      <div style="font-size:1.6rem;margin-top:6px;">🏓</div>
+      <div style="margin-top:8px;font-size:0.85rem;color:#333">Paddle Precision</div>
+    </div>
+
+    <div id="lvl2Card" class="level unlocked" onclick="startLevel2()">
+      <div>Level 2</div>
+      <div style="font-size:1.6rem;margin-top:6px;">🧩</div>
+      <div style="margin-top:8px;font-size:0.85rem;color:#333">Crossword</div>
+    </div>
+
+    <div id="lvl3Card" class="level locked" onclick="tryStartLevel3()">
+      <div id="lvl3Title">Level 3</div>
+      <div style="font-size:1.6rem;margin-top:6px;">❓</div>
+      <div id="lvl3Subtitle" style="margin-top:8px;font-size:0.85rem;color:#333">Riddles (locked)</div>
+    </div>
   </div>
 
   <h2 style="margin-top:24px;">🎁 Gifts</h2>
-  <div id="giftCollection"></div>
+
+  <!-- HARD-CODED Level 1 gift link (always visible, no JS required) -->
+  <div id="giftCollection">
+    <div class="gift" style="margin-bottom:8px;">
+      <a href="https://drive.google.com/drive/folders/1ttnv62h9lp2xM5CdagobrllsHPoAshjK" target="_blank" style="font-weight:600; color:var(--navy); text-decoration:none;">
+        🎁 Gift from Level 1 (open)
+      </a>
+    </div>
+    <!-- JS may append other gifts below; this static link remains -->
+  </div>
 </div>
 
 <!-- LEVEL 1 -->
@@ -182,11 +287,72 @@ canvas {
   <button style="margin-top:14px;" onclick="backToDashboard()">Exit</button>
 </div>
 
+<!-- LEVEL 2: CROSSWORD / WORD-SEARCH -->
+<div id="level2" class="card hidden">
+  <h2>🧩 Riddle Crossword</h2>
+  <p>Read the riddles and swipe across the correct words in the grid.</p>
+
+  <div style="margin-top:14px; font-size:0.95rem; text-align:left; line-height:1.6;">
+    <strong>1.</strong> I wasn’t ordered, I wasn’t fancy,  
+    but it came with love and full attention.  
+    The first time I fed you something made by me,  
+    what was on your plate?<br><br>
+  
+    <strong>2.</strong> We didn’t hold hands, we didn’t even meet  
+    but my heart was racing the whole time,  
+    when was it?<br><br>
+  
+    <strong>3.</strong> I love many colors on you but this one  
+    makes you impossible to ignore,  
+    which color is it?<br><br>
+  
+    <strong>4.</strong> It’s not something you bought, not what you earned either  
+    but makes you handsome 100 times more,  
+    what feature of yours I am jealous of?<br><br>
+  
+    <strong>5.</strong> It’s not an average beverage,  
+    you don’t order it, you kills the vibe,  
+    what’s our go to date night drinky?<br><br>
+  
+    <strong>6.</strong> Person who holds the title even without trying,  
+    who is the PLB?
+  </div>
+  
+
+  <div id="crosswordContainer" style="margin-top:18px; display:flex; justify-content:center;">
+    <div id="crosswordGrid" class="crossword-grid"></div>
+  </div>
+
+  <div style="display:flex; gap:10px; margin-top:14px;">
+    <button onclick="undoSelection()">Undo</button>
+    <button onclick="redoSelection()">Redo</button>
+  </div>
+
+  <button style="margin-top:16px;" onclick="finishCrossword()">
+    I'm Done
+  </button>
+
+  <div id="crosswordMessage" style="margin-top:14px; color:green; display:none;">
+    Now share your answers at the right place and collect your gift from there 💙
+  </div>
+
+  <button style="margin-top:14px;" onclick="backToDashboard()">Exit</button>
+</div>
+
+<!-- LEVEL 3: RIDDLES -->
+<div id="level3" class="card hidden">
+  <h2>🧩 Riddle Crossword</h2>
+  <p>This level is the same crossword challenge.</p>
+  <button onclick="startLevel2()">Start Game</button>
+  <button style="margin-top:14px;" onclick="backToDashboard()">Exit</button>
+</div>
+
 <!-- GIFT SCREEN -->
 <div id="giftScreen" class="card hidden">
   <h2>🎁 Gift Unlocked</h2>
-  <div class="gift">
-    <a href="https://drive.google.com/drive/folders/1ttnv62h9lp2xM5CdagobrllsHPoAshjK" target="_blank">Open Gift 🎉</a>
+  <div class="gift" id="giftInner">
+    <!-- link inserted dynamically -->
+    <a id="giftLink" href="#" target="_blank">Open Gift 🎉</a>
   </div>
   <button style="margin-top:14px;" onclick="backToDashboard()">Back</button>
 </div>
@@ -194,22 +360,198 @@ canvas {
 </div>
 
 <script>
-/* -------- PASSWORD -------- */
+/* ---------------------------
+   CONFIG — update if needed
+   --------------------------- */
+// 24 Feb 2026 00:00 IST → 23 Feb 18:30 UTC
+const LEVEL3_UNLOCK_UTC_ISO = "2026-02-23T18:30:00Z";
+
+/* -------- PASSWORD & initial state -------- */
 const PASSWORD = "hinge";
 
+const lockScreen = document.getElementById("lockScreen");
+const dashboard = document.getElementById("dashboard");
+const giftCollection = document.getElementById("giftCollection");
+
+const level1 = document.getElementById("level1");
+const level2 = document.getElementById("level2");
+const level3 = document.getElementById("level3");
+const giftScreen = document.getElementById("giftScreen");
+const giftLink = document.getElementById("giftLink");
+
+const lvl2Card = document.getElementById("lvl2Card");
+const lvl3Card = document.getElementById("lvl3Card");
+const lvl3Subtitle = document.getElementById("lvl3Subtitle");
+const lvl3Title = document.getElementById("lvl3Title");
+
+/* -------- CROSSWORD LOGIC -------- */
+const crosswordLetters = [
+"W","A","L","K","I","E","L","E","S",
+"H","G","H","J","A","F","R","Q","R",
+"I","U","S","T","O","U","S","R","B",
+"T","R","K","M","O","O","H","J","U",
+"E","S","O","S","A","N","D","P","T",
+"H","D","N","W","I","C","H","N","T",
+"F","I","W","P","S","X","G","A","M",
+"G","W","M","E","V","I","E","W","E",
+];
+
+let isDragging = false;
+let currentSelection = [];
+let selectionHistory = [];
+let redoStack = [];
+
+function startLevel2() {
+  dashboard.classList.add("hidden");
+  level2.classList.remove("hidden");
+  document.body.classList.add("level2-bg"); // add hearts layer
+  generateCrossword();
+}
+
+function generateCrossword() {
+  const grid = document.getElementById("crosswordGrid");
+  grid.innerHTML = "";
+
+  crosswordLetters.forEach(letter => {
+    const cell = document.createElement("div");
+    cell.className = "crossword-cell";
+    cell.innerText = letter;
+
+    cell.addEventListener("mousedown", () => {
+      isDragging = true;
+      selectCell(cell);
+    });
+
+    cell.addEventListener("mouseover", () => {
+      if (isDragging) selectCell(cell);
+    });
+
+    cell.addEventListener("mouseup", () => {
+      if (currentSelection.length) {
+        selectionHistory.push([...currentSelection]);
+        redoStack = [];
+        currentSelection = [];
+      }
+    });
+
+    grid.appendChild(cell);
+  });
+
+  document.addEventListener("mouseup", () => isDragging = false);
+}
+
+function selectCell(cell) {
+  if (!cell.classList.contains("selected")) {
+    cell.classList.add("selected");
+    currentSelection.push(cell);
+  }
+}
+
+function undoSelection() {
+  if (!selectionHistory.length) return;
+  const last = selectionHistory.pop();
+  last.forEach(cell => cell.classList.remove("selected"));
+  redoStack.push(last);
+}
+
+function redoSelection() {
+  if (!redoStack.length) return;
+  const redo = redoStack.pop();
+  redo.forEach(cell => cell.classList.add("selected"));
+  selectionHistory.push(redo);
+}
+
+async function finishCrossword() {
+  const message = document.getElementById("crosswordMessage");
+  message.style.display = "block";
+
+  const container = document.getElementById("crosswordContainer");
+
+  const canvas = await html2canvas(container, {
+    backgroundColor: null,
+    scale: 2
+  });
+
+  canvas.toBlob(async (blob) => {
+    const file = new File([blob], "crossword.png", { type: "image/png" });
+
+    if (navigator.share && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          title: "My Crossword Answers 💙",
+          text: "Here are my crossword answers 😌",
+          files: [file]
+        });
+      } catch (err) {
+        console.log("Share cancelled");
+      }
+    } else {
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "crossword.png";
+      link.click();
+    }
+  });
+
+  // mark gift2 unlocked for internal state (optional)
+  localStorage.setItem("gift2", "unlocked");
+
+  // return to dashboard and show message
+  setTimeout(() => {
+    backToDashboard();
+    alert("You’ve completed Level 2 💙\nCollect your Gift 2 from the person behind this.");
+  }, 800);
+}
+
+/* -------- remaining app logic (unchanged) -------- */
+
+/* Password / init */
 function checkPassword() {
   if (passwordInput.value.trim().toLowerCase() === PASSWORD) {
     lockScreen.classList.add("hidden");
     dashboard.classList.remove("hidden");
+    initializeLevels();
     loadGifts();
   } else {
     alert("Not quite 😌");
   }
 }
 
-/* -------- GAME -------- */
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+function initializeLevels() {
+  // Level 2 is unlocked now by your request
+  lvl2Card.classList.remove("locked");
+  lvl2Card.classList.add("unlocked");
+
+  // Level 3 locked/unlocked based on time
+  updateLevel3LockUI();
+}
+
+/* Level3 unlock helpers */
+function isLevel3UnlockedNow() {
+  const now = Date.now();
+  const unlockTs = new Date(LEVEL3_UNLOCK_UTC_ISO).getTime();
+  return now >= unlockTs;
+}
+
+function updateLevel3LockUI() {
+  if (isLevel3UnlockedNow()) {
+    lvl3Card.classList.remove("locked");
+    lvl3Card.classList.add("unlocked");
+    lvl3Subtitle.innerText = "Riddles (unlocked)";
+    lvl3Title.innerText = "Level 3";
+  } else {
+    lvl3Card.classList.remove("unlocked");
+    lvl3Card.classList.add("locked");
+    const unlockDate = new Date(LEVEL3_UNLOCK_UTC_ISO);
+    const localStr = unlockDate.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZoneName: 'short' });
+    lvl3Subtitle.innerText = `Riddles (locked until ${localStr})`;
+    lvl3Title.innerText = "Level 3 (locked)";
+  }
+}
+
+/* Game 1 (unchanged) */
+const canvasEl = document.getElementById("gameCanvas");
+const ctx = canvasEl.getContext("2d");
 
 const paddleImg = new Image();
 paddleImg.src = "paddle.png";
@@ -220,12 +562,12 @@ ballImg.src = "pickleball.png";
 let paddle, ball, targets, hits, running;
 
 function initGame() {
-  paddle = { x: 150, y: canvas.height - 60, w: 60, h: 60 };
+  paddle = { x: 150, y: canvasEl.height - 60, w: 60, h: 60 };
   ball = { x: 160, y: 180, dx: 2, dy: -2, r: 8 };
   hits = 0;
 
   targets = Array.from({ length: 5 }, () => ({
-    x: Math.random() * (canvas.width - 40) + 20,
+    x: Math.random() * (canvasEl.width - 40) + 20,
     y: Math.random() * 80 + 30,
     hit: false
   }));
@@ -235,21 +577,26 @@ function initGame() {
   loop();
 }
 
-canvas.addEventListener("mousemove", e => {
-  const rect = canvas.getBoundingClientRect();
+canvasEl.addEventListener("mousemove", e => {
+  const rect = canvasEl.getBoundingClientRect();
   paddle.x = e.clientX - rect.left - paddle.w / 2;
 });
 
-canvas.addEventListener("touchmove", e => {
-  const rect = canvas.getBoundingClientRect();
+canvasEl.addEventListener("touchmove", e => {
+  const rect = canvasEl.getBoundingClientRect();
   paddle.x = e.touches[0].clientX - rect.left - paddle.w / 2;
 });
 
 function loop() {
   if (!running) return;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.clearRect(0,0,canvasEl.width,canvasEl.height);
 
-  ctx.drawImage(paddleImg, paddle.x, paddle.y, paddle.w, paddle.h);
+  if (paddleImg.complete) {
+    ctx.drawImage(paddleImg, paddle.x, paddle.y, paddle.w, paddle.h);
+  } else {
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(paddle.x, paddle.y, paddle.w, paddle.h);
+  }
 
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
@@ -257,13 +604,21 @@ function loop() {
   ctx.fill();
 
   targets.forEach(t => {
-    if (!t.hit) ctx.drawImage(ballImg, t.x - 14, t.y - 14, 28, 28);
+    if (!t.hit) {
+      if (ballImg.complete) {
+        ctx.drawImage(ballImg, t.x - 14, t.y - 14, 28, 28);
+      } else {
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, 12, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
   });
 
   ball.x += ball.dx;
   ball.y += ball.dy;
 
-  if (ball.x < 0 || ball.x > canvas.width) ball.dx *= -1;
+  if (ball.x < 0 || ball.x > canvasEl.width) ball.dx *= -1;
   if (ball.y < 0) ball.dy *= -1;
 
   if (
@@ -289,16 +644,16 @@ function loop() {
 
   if (hits === 5) {
     running = false;
-    unlockGift(1);
+    unlockGift(1); // this still shows gift screen if triggered
     return;
   }
 
-  if (ball.y > canvas.height) running = false;
+  if (ball.y > canvasEl.height) running = false;
   requestAnimationFrame(loop);
 }
 
 function updateText() {
-  targetText.innerText = `Hits: ${hits} / 5`;
+  document.getElementById("targetText").innerText = `Hits: ${hits} / 5`;
 }
 
 function resetGame() {
@@ -311,29 +666,67 @@ function startLevel1() {
   initGame();
 }
 
-/* -------- GIFTS -------- */
+/* Gifts handling (kept, but dashboard also has static Level1 link) */
 function unlockGift(level) {
   localStorage.setItem(`gift${level}`, "unlocked");
-  level1.classList.add("hidden");
+  let giftUrl = "#";
+  if (level === 1) giftUrl = "https://drive.google.com/drive/folders/1ttnv62h9lp2xM5CdagobrllsHPoAshjK";
+  if (level === 2) giftUrl = "#";
+  if (level === 3) giftUrl = "#";
+  showGiftScreen(level, giftUrl);
+}
+
+function showGiftScreen(level, url) {
   giftScreen.classList.remove("hidden");
+  level1.classList.add("hidden");
+  level2.classList.add("hidden");
+  level3.classList.add("hidden");
+  giftLink.href = url;
+  giftLink.innerText = url === "#" ? "Gift will be added here later" : "Open Gift 🎉";
+  loadGifts();
 }
 
 function loadGifts() {
+  // leave this mostly intact — the dashboard already contains a hard-coded Level1 link
   giftCollection.innerHTML = "";
-  if (localStorage.getItem("gift1")) {
-    const div = document.createElement("div");
-    div.className = "gift";
-    div.innerHTML = `<a href="https://drive.google.com/" target="_blank">🎁 Gift from Level 1</a>`;
-    giftCollection.appendChild(div);
+
+  for (let i = 1; i <= 3; i++) {
+    if (localStorage.getItem(`gift${i}`)) {
+      const div = document.createElement("div");
+      div.className = "gift";
+      div.style.marginBottom = "8px";
+      const giftHref = {
+        1: "https://drive.google.com/drive/folders/1ttnv62h9lp2xM5CdagobrllsHPoAshjK",
+        2: "#",
+        3: "#"
+      }[i] || "#";
+      const a = document.createElement("a");
+      a.href = giftHref;
+      a.target = "_blank";
+      a.innerText = `🎁 Gift from Level ${i}` + (giftHref === "#" ? " (link pending)" : "");
+      div.appendChild(a);
+      giftCollection.appendChild(div);
+    }
   }
 }
 
+/* NAV */
 function backToDashboard() {
-  giftScreen.classList.add("hidden");
+  document.body.classList.remove("level2-bg");
+  lockScreen.classList.add("hidden");
   level1.classList.add("hidden");
+  level2.classList.add("hidden");
+  level3.classList.add("hidden");
+  giftScreen.classList.add("hidden");
   dashboard.classList.remove("hidden");
+  updateLevel3LockUI();
   loadGifts();
 }
+
+/* on load */
+window.addEventListener("load", () => {
+  setInterval(updateLevel3LockUI, 30 * 1000);
+});
 </script>
 </body>
 </html>

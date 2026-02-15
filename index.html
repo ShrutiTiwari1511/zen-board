@@ -31,7 +31,9 @@ body {
   align-items: center;
   justify-content: center;
   color: var(--navy);
+  overflow-y: auto;   /* ADD THIS */
 }
+
 
 .hidden { display: none; }
 
@@ -169,13 +171,14 @@ canvas {
 
 .crossword-grid {
   display: grid;
-  grid-template-columns: repeat(9, 34px);
+  grid-template-columns: repeat(9, 1fr); /* equal flexible columns */
   gap: 6px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .crossword-cell {
-  width: 34px;
-  height: 34px;
+  aspect-ratio: 1 / 1;   /* keeps square shape */
   background: #f1f8f3;
   border-radius: 6px;
   display:flex;
@@ -185,7 +188,9 @@ canvas {
   cursor:pointer;
   user-select:none;
   color: var(--navy);
+  font-size: clamp(12px, 3vw, 18px); /* auto text resize */
 }
+
 
 .crossword-cell.selected {
   background: var(--pista);
@@ -213,7 +218,23 @@ canvas {
 
 /* small screens adjustment */
 @media (max-width:600px){
-  .container { max-width:420px; }
+  body {
+    align-items: flex-start;   
+    padding-top: 20px;     
+  }
+
+  .container { 
+    max-width:420px; 
+  }
+
+  .level-grid { 
+    grid-template-columns: repeat(2,1fr); 
+  }
+
+  .level2-bg::before { 
+    font-size: 28px; 
+    line-height: 1.4; 
+  }
   .level-grid { grid-template-columns: repeat(2,1fr); }
   .level2-bg::before { font-size: 28px; line-height: 1.4; }
 }
@@ -270,6 +291,22 @@ canvas {
     <!-- JS may append other gifts below; this static link remains -->
   </div>
 </div>
+<div id="level2CompletePopup" class="hidden" style="
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 16px 20px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  z-index: 999;
+  text-align: center;
+  max-width: 320px;
+">
+  💙 Share this to the right person  
+  and collect your gift from there.
+</div>
 
 <!-- LEVEL 1 -->
 <div id="level1" class="card hidden">
@@ -320,7 +357,7 @@ canvas {
   
 
   <div id="crosswordContainer" style="margin-top:18px; display:flex; justify-content:center;">
-    <div id="crosswordGrid" class="crossword-grid"></div>
+    <div id="crosswordCapture"><div id="crosswordGrid" class="crossword-grid"></div></div>
   </div>
 
   <div style="display:flex; gap:10px; margin-top:14px;">
@@ -328,7 +365,7 @@ canvas {
     <button onclick="redoSelection()">Redo</button>
   </div>
 
-  <button style="margin-top:16px;" onclick="finishCrossword()">
+  <button style="margin-top:16px;" onclick="shareCrossword()">
     I'm Done
   </button>
 
@@ -498,10 +535,52 @@ async function finishCrossword() {
 
   // return to dashboard and show message
   setTimeout(() => {
-    backToDashboard();
-    alert("You’ve completed Level 2 💙\nCollect your Gift 2 from the person behind this.");
-  }, 800);
+  backToDashboard();
+
+  // wait for dashboard to render
+  setTimeout(() => {
+    showLevel2Popup();
+  }, 100);
+}, 800);
+
 }
+function showLevel2Popup() {
+  const popup = document.getElementById("level2CompletePopup");
+  popup.classList.remove("hidden");
+
+  setTimeout(() => {
+    popup.classList.add("hidden");
+  }, 4000); // disappears after 4 seconds
+}
+async function shareCrossword() {
+  const element = document.getElementById("crosswordCapture");
+
+  const canvas = await html2canvas(element);
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+
+  const file = new File([blob], "crossword.png", { type: "image/png" });
+
+  // Mobile devices with Web Share API (best experience)
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    await navigator.share({
+      title: "Level 2 Completed 💙",
+      text: "I completed the crossword!",
+      files: [file]
+    });
+  } else {
+    // Desktop fallback
+    const link = document.createElement("a");
+    link.href = canvas.toDataURL();
+    link.download = "crossword.png";
+    link.click();
+
+    window.open(
+      "https://wa.me/?text=I just completed the crossword! 💙",
+      "_blank"
+    );
+  }
+}
+
 
 /* -------- remaining app logic (unchanged) -------- */
 
